@@ -1,0 +1,25 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    // Note: These configurations won't get deployed to Azure, it's local only
+    //       Enter all the values in Configration section
+
+    "MqttBrokerURL": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.hivemq.cloud",
+    "MqttBrokerClientID": "ClientUniqueName00001",
+    "MqttBrokerTopic": "topicname/actionname",
+    "MqttBrokerUsername": "username",
+    "MqttBrokerPassword": "password",
+    "Timer1GpioName": "GP16",
+    "Timer1CronON": "0 30 8 * * *", //  starts at 8:30 AM
+    "Timer1CronOFF": "0 30 20 * * *", //  stops at 20:30 PM 
+    "Timer2GpioName": "GP17",
+    "Timer2CronON": "0 0 17 * * *", //  starts: 5 PM
+    "Timer2CronOFF": "0 30 23 * * *" //  stops: 23:30PM 
+
+    // On Azure Portal, make sure to set the time zone, otherwise CRON is in UTC
+    // WEBSITE_TIME_ZONE : Eastern Standard Time
+  }
+}
