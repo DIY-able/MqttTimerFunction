@@ -1,6 +1,6 @@
 # MqttTimerFunction
  
-This is a simple serverless Azure Function running 24/7 on the cloud like Windows Service in the old days. It has two timers triggered by specific times using CRON expressions. The function sends MQTT messages to a HiveMQ broker and collaborates with another project of mine that utilizes Raspberry Pi PicoW:
+This sample code is a serverless Azure Function running 24/7 on the cloud like Windows Service in the old days. It has two timers triggered by specific times using CRON expressions, the function sends MQTT messages to a HiveMQ broker. This collaborates with another project of mine "MqttTinyController" that utilizes Raspberry Pi PicoW to control relay for light switches:
 
 https://github.com/DIY-able/MqttTinyController  
 
@@ -18,3 +18,4 @@ https://github.com/dotnet/MQTTnet
 - IDE:  Visual Studio 2022 Professional (You can use VS Code)
 - MQTTnet: v4.3.3
 - Runtime .NET 8
+
