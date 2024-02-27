@@ -17,7 +17,8 @@
     "Timer1CronOFF": "0 30 20 * * *", //  stops at 20:30 PM 
     "Timer2GpioName": "GP17",
     "Timer2CronON": "0 0 17 * * *", //  starts: 5 PM
-    "Timer2CronOFF": "0 30 23 * * *" //  stops: 23:30PM 
+    "Timer2CronOFF": "0 30 23 * * *", //  stops: 23:30PM 
+    "TotpKey": "ORUGS4ZANFZSAYJAONSWG4TFOQQGWZLZ" // This key is Base32 encoded, use online tool to encode.
 
     // On Azure Portal, make sure to set the time zone, otherwise CRON is in UTC
     // WEBSITE_TIME_ZONE : Eastern Standard Time

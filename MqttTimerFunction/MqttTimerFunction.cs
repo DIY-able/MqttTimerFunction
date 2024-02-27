@@ -4,13 +4,10 @@ using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Server;
-using MQTTnet.Packets;
 using MQTTnet.Protocol;
 using System.Text;
 using MQTTnet.Diagnostics;
 using System.Security.Authentication;
-using Azure;
-using Google.Protobuf;
 
 namespace MqttTimerFunction
 {
@@ -27,6 +24,8 @@ namespace MqttTimerFunction
 
         private static string timer1GpioName = "";
         private static string timer2GpioName = "";
+        private static string totpKey = "";
+        
 
         public MqttTimerFunction(ILoggerFactory loggerFactory)
         {
@@ -41,6 +40,8 @@ namespace MqttTimerFunction
 
                 timer1GpioName = Environment.GetEnvironmentVariable("Timer1GpioName") ?? "";
                 timer2GpioName = Environment.GetEnvironmentVariable("Timer2GpioName") ?? "";
+
+                totpKey = Environment.GetEnvironmentVariable("TotpKey") ?? "";
             }
             catch (Exception ex)
             {
@@ -48,25 +49,34 @@ namespace MqttTimerFunction
             }
         }
 
+
+        public static int GetTotpCode()
+        {
+            TotpAuthenticationService totp = new TotpAuthenticationService(6, 30);   // 30 seconds
+            int code = totp.GenerateCode(Encoding.ASCII.GetBytes(Base32Decode(totpKey)));
+
+            return code;
+        }
+
         [Function("Timer1Starts")]
         public void Timer1Starts([TimerTrigger("%Timer1CronON%", RunOnStartup = false)] TimerInfo myTimer)
         {
-            _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            _logger.LogInformation($"C# Timer1Starts trigger function executed at: {DateTime.Now}");
 
             if (myTimer.ScheduleStatus is not null)
             {                
-                Task.Run(() => Publish_Topic("{\"" + timer1GpioName + "\": 1}"));
+                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer1GpioName + "\": 1}"));
             }
         } // run
 
         [Function("Timer1Ends")]
         public void Timer1Ends([TimerTrigger("%Timer1CronOFF%", RunOnStartup = false)] TimerInfo myTimer)
         {
-            _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            _logger.LogInformation($"C# Timer1Ends trigger function executed at: {DateTime.Now}");
 
             if (myTimer.ScheduleStatus is not null)
             {
-                Task.Run(() => Publish_Topic("{\"" + timer1GpioName + "\": 0}"));
+                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer1GpioName + "\": 0}"));
             }
         } // run
 
@@ -74,24 +84,28 @@ namespace MqttTimerFunction
         [Function("Timer2Starts")]
         public void Timer2Starts([TimerTrigger("%Timer2CronON%", RunOnStartup = false)] TimerInfo myTimer)
         {
-            _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            _logger.LogInformation($"C# Timer2Starts trigger function executed at: {DateTime.Now}");
 
             if (myTimer.ScheduleStatus is not null)
             {
-                Task.Run(() => Publish_Topic("{\"" + timer2GpioName + "\": 1}"));
+                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer2GpioName + "\": 1}"));
             }
         } // run
 
         [Function("Timer2Ends")]
         public void Timer2Ends([TimerTrigger("%Timer2CronOFF%", RunOnStartup = false)] TimerInfo myTimer)
         {
-            _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            _logger.LogInformation($"C# Timer2Ends trigger function executed at: {DateTime.Now}");
 
             if (myTimer.ScheduleStatus is not null)
             {
-                Task.Run(() => Publish_Topic("{\"" + timer2GpioName + "\": 0}"));
+                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer2GpioName + "\": 0}"));
             }
         } // run
+
+
+        // -----------------------------------------------------------------------------------
+
 
         public static async Task Connect_Client()
         {
@@ -141,18 +155,14 @@ namespace MqttTimerFunction
             }
         }
 
-
-        public static async Task Publish_Topic(string payload)
+        /// <summary>
+        /// Publish to MQTT broker
+        /// </summary>
+        /// <param name="mfa"></param>
+        /// <param name="payload"></param>
+        /// <returns></returns>
+        public static async Task Publish_Topic(string mfa, string payload)
         {
-            ///*
-            // * This sample pushes a simple application message including a topic and a payload.
-            // *
-            // * Always use builders where they exist. Builders (in this project) are designed to be
-            // * backward compatible. Creating an _MqttApplicationMessage_ via its constructor is also
-            // * supported but the class might change often in future releases where the builder does not
-            // * or at least provides backward compatibility where possible.
-            // */
-
             var mqttEventLogger = new MqttNetEventLogger("MyCustomLogger");
 
             mqttEventLogger.LogMessagePublished += (sender, args) =>
@@ -192,9 +202,17 @@ namespace MqttTimerFunction
                 // The result from this message returns additional data which was sent 
                 // from the server. Please refer to the MQTT protocol specification for details.
                 var response = await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-                // response.DumpToConsole();
                 Console.WriteLine(response.ToString());
 
+                // MFA message 
+                var mfaMessage = new MqttApplicationMessageBuilder()
+                    .WithTopic(topic)
+                    .WithPayload(mfa)
+                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                    .WithRetainFlag(false)
+                    .Build();
+
+                // GPXX message
                 var applicationMessage = new MqttApplicationMessageBuilder()
                     .WithTopic(topic)
                     .WithPayload(payload)
@@ -202,7 +220,11 @@ namespace MqttTimerFunction
                     .WithRetainFlag(false)
                     .Build();
 
+                // Publish both messages with 5 seconds apart
+                await mqttClient.PublishAsync(mfaMessage, CancellationToken.None);
+                await Task.Delay(5000);
                 await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+
                 await mqttClient.DisconnectAsync();
                 Console.WriteLine("MQTT application message is published.");
             }
@@ -223,61 +245,41 @@ namespace MqttTimerFunction
            return Task.CompletedTask;
         }
 
-        public static async Task Subscribe_Topic()
+
+        /// <summary>
+        ///  Decode base32 string
+        /// </summary>
+        /// <param name="base32String"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static string Base32Decode(string base32String)
         {
-            ///*
-            // * This sample subscribes to a topic and processes the received message.
-            // */
+            const string base32Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"; // Standard Base32 alphabet
+            const int bitsPerChar = 5;
 
-            var mqttFactory = new MqttFactory();
+            var output = new byte[base32String.Length * bitsPerChar / 8];
+            int outputIndex = 0;
+            int bits = 0;
+            int bitsRemaining = 0;
 
-            using (var mqttClient = mqttFactory.CreateMqttClient())
+            foreach (char c in base32String)
             {
-                var mqttClientOptions = new MqttClientOptionsBuilder()
-                                  .WithTcpServer(brokerURL, 8883)
-                                  .WithCredentials(username, password)
-                                  .WithTlsOptions(new MqttClientTlsOptions()
-                                  {
-                                      UseTls = true, // Is set by default to true, I guess...
-                                      SslProtocol = SslProtocols.Tls12, // TLS downgrade
-                                      AllowUntrustedCertificates = true, // Not sure if this is really needed...
-                                      IgnoreCertificateChainErrors = true, // Not sure if this is really needed...
-                                      IgnoreCertificateRevocationErrors = true, // Not sure if this is really needed...
-                                      CertificateValidationHandler = (w) => true // Not sure if this is really needed...
-                                  })
-                                  .WithCleanSession()
-                                  .Build();
-                mqttClientOptions.ClientId = clientID;
+                int value = base32Chars.IndexOf(c);
+                if (value < 0)
+                    throw new ArgumentException($"Invalid character in Base32 string: '{c}'");
 
-                // Setup message handling before connecting so that queued messages
-                // are also handled properly. When there is no event handler attached all
-                // received messages get lost.
-                mqttClient.ApplicationMessageReceivedAsync += e =>
+                bits |= value;
+                bitsRemaining += bitsPerChar;
+                if (bitsRemaining >= 8)
                 {
-                    Console.WriteLine("Received application message.");
-                    //   e.DumpToConsole();
-                    Console.WriteLine(e.ToString());
-
-                    return Task.CompletedTask;
-                };
-
-                await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-
-                var mqttSubscribeOptions = mqttFactory.CreateSubscribeOptionsBuilder()
-                    .WithTopicFilter(
-                        f =>
-                        {
-                            f.WithTopic(topic);
-                        })
-                    .Build();
-
-                await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
-
-                Console.WriteLine("MQTT client subscribed to topic.");
-
-                Console.WriteLine("Press enter to exit.");
-                Console.ReadLine();
+                    output[outputIndex++] = (byte)(bits >> (bitsRemaining - 8));
+                    bits &= (0xFF >> (8 - (bitsRemaining - 8)));
+                    bitsRemaining -= 8;
+                }
+                bits <<= bitsPerChar;
             }
+
+            return Encoding.UTF8.GetString(output);
         }
 
 
