@@ -8,6 +8,9 @@ using MQTTnet.Protocol;
 using System.Text;
 using MQTTnet.Diagnostics;
 using System.Security.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
 
 namespace MqttTimerFunction
 {
@@ -24,6 +27,8 @@ namespace MqttTimerFunction
 
         private static string timer1GpioName = "";
         private static string timer2GpioName = "";
+        private static string http1GpioName = "";
+        private static string http2GpioName = "";
         private static string totpKey = "";
         
 
@@ -40,6 +45,8 @@ namespace MqttTimerFunction
 
                 timer1GpioName = Environment.GetEnvironmentVariable("Timer1GpioName") ?? "";
                 timer2GpioName = Environment.GetEnvironmentVariable("Timer2GpioName") ?? "";
+                http1GpioName = Environment.GetEnvironmentVariable("Http1GpioName") ?? "";
+                http2GpioName = Environment.GetEnvironmentVariable("Http2GpioName") ?? "";
 
                 totpKey = Environment.GetEnvironmentVariable("TotpKey") ?? "";
             }
@@ -102,6 +109,26 @@ namespace MqttTimerFunction
                 Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer2GpioName + "\": 0}"));
             }
         } // run
+
+        [Function("Http1Send")]
+        public IActionResult Http1Send([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
+        {
+            _logger.LogInformation("C# Http1Send function processed a request.");
+
+            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http1GpioName + "\": 0}"));
+
+            return new OkObjectResult("Send Mqtt triggered");
+        }
+
+        [Function("Http2Send")]
+        public IActionResult Http2Send([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+        {
+            _logger.LogInformation("C# Http2Send function processed a request.");
+
+            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http2GpioName + "\": 0}"));
+
+            return new OkObjectResult("Send Mqtt triggered");
+        }
 
 
         // -----------------------------------------------------------------------------------
