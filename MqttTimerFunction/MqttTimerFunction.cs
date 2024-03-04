@@ -115,7 +115,7 @@ namespace MqttTimerFunction
         {
             _logger.LogInformation("C# Http1Send function processed a request.");
 
-            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http1GpioName + "\": 0}"));
+            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http1GpioName + "\": 1}"));
 
             return new OkObjectResult("Send Mqtt triggered");
         }
@@ -125,7 +125,7 @@ namespace MqttTimerFunction
         {
             _logger.LogInformation("C# Http2Send function processed a request.");
 
-            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http2GpioName + "\": 0}"));
+            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http2GpioName + "\": 1}"));
 
             return new OkObjectResult("Send Mqtt triggered");
         }
