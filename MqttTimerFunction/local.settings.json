@@ -18,9 +18,9 @@
     "Timer2GpioName": "GP17",
     "Timer2CronON": "0 0 17 * * *", //  starts: 5 PM
     "Timer2CronOFF": "0 30 23 * * *", //  stops: 23:30PM 
-    "Http1GpioName": "GP26", // http trigger 1 (test)
-    "Http2GpioName": "GP27", // http trigger 2 (test)
-    "TotpKey": "ORUGS4ZANFZSAYJAONSWG4TFOQQGWZLZ" // This key is Base32 encoded, use online tool to encode.
+    "Http1GpioName": "GP26", // http trigger 1 (not anonymous, authenicated by Function key, use query string code=[key] or x-functions-key:[key] in HTTP Header )
+    "Http2GpioName": "GP27", // http trigger 2 
+    "TotpKey": "ORUGS4ZANFZSAYJAONSWG4TFOQQGWZLZ" // This key is Base32 encoded, use online tool to encode/decode.
 
     // On Azure Portal, make sure to set the time zone, otherwise CRON is in UTC
     // WEBSITE_TIME_ZONE : Eastern Standard Time
