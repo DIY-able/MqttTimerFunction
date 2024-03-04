@@ -111,7 +111,7 @@ namespace MqttTimerFunction
         } // run
 
         [Function("Http1Send")]
-        public IActionResult Http1Send([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
+        public IActionResult Http1Send([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
         {
             _logger.LogInformation("C# Http1Send function processed a request.");
 
