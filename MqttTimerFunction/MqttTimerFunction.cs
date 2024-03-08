@@ -34,6 +34,10 @@ namespace MqttTimerFunction
 
         public MqttTimerFunction(ILoggerFactory loggerFactory)
         {
+            // Note: This is NOT an Azure Durable Function and it's just sample code. It is STATELESS.
+            // This constructor is called EVERY TIME there is a trigger (either Timer or Http). It is by design.
+            // If you need to pass variable between calls, you need to re-write the code as STATEFUL Durable Function.
+
             _logger = loggerFactory.CreateLogger<MqttTimerFunction>();
             try
             {
@@ -115,7 +119,7 @@ namespace MqttTimerFunction
         {
             _logger.LogInformation("C# Http1Send function processed a request.");
 
-            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http1GpioName + "\": 1}"));
+            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http1GpioName + "\": 1}")); // ON
 
             return new OkObjectResult("Send Mqtt triggered");
         }
@@ -125,7 +129,7 @@ namespace MqttTimerFunction
         {
             _logger.LogInformation("C# Http2Send function processed a request.");
 
-            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http2GpioName + "\": 1}"));
+            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http2GpioName + "\": 0}")); // OFF
 
             return new OkObjectResult("Send Mqtt triggered");
         }
