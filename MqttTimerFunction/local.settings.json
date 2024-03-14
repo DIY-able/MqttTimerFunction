@@ -22,7 +22,37 @@
     "Http2GpioName": "GP27", // http trigger 2 
     "TotpKey": "ORUGS4ZANFZSAYJAONSWG4TFOQQGWZLZ" // This key is Base32 encoded, use online tool to encode/decode.
 
-    // On Azure Portal, make sure to set the time zone, otherwise CRON is in UTC
-    // WEBSITE_TIME_ZONE : Eastern Standard Time
+    // Azure Portal deployment notes:
+    // 1. Create Function App (Consumption plan)
+    // 2. Create Storage Account (only Blog and File are needed, Table and Query are not needed)
+    // 3. In Function App > "Configuration" or "Environment variables" section
+    // 4. Create the custom values above
+    // 5. Create a variable to set the time zone, otherwise CRON is in UTC
+    //    WEBSITE_TIME_ZONE : Eastern Standard Time
+    // 6. Get the ConnectionString from Storage Account > Access Keys, create variables:
+    //    AzureWebJobsStorage: DefaultEndpointsProtocol=https;AccountName=xxxxxx
+    //    WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: DefaultEndpointsProtocol=https;AccountName=xxxxxx
+    //    WEBSITE_CONTENTSHARE: storage123456  (make up a name)
+    //    Note: AzureWebJobsStorage and WEBSITE_CONTENTAZUREFILECONNECTIONSTRING have the same value.
+    // 7. Function App > Get Publishing Profile (download it)
+    // 8. Deploy from Visual Studio using the profile
+    // 9. Start Function App
+    // 10. storage123456 will get created in Storage account > File shares
+    //     azure-webjobs-hosts will get created in Storage account > Containers
+    // 11. Security: Function App > Networking, disable public access, and add your HOME IP only.
+    //               Storage account > Networking, leave public access opened (unfortunately). 
+    //               Ideally, for Enterprise we should connect to Function App to Storage Account by virtual network.
+    //               However, Consumption plan, it doesn't support, even adding all Function App outbound IPs to Storage account doesn't always work. 
+    // Notes:
+    // HTTP Trigger doesn't need Storage Account
+    // Timer Trigger needs "AzureWebJobsStorage" parameter and you will get a warning. But everything still works okay.
+    // Proper way is to setup using all 3 settings: AzureWebJobsStorage, WEBSITE_CONTENTSHARE and WEBSITE_CONTENTAZUREFILECONNECTIONSTRING
+    //
+    // If you get error: 1 functions found (Custom)
+    //                   0 functions loaded
+    // It's not working. Delete the storage account and do it again step by step. Reset the Publishing Profile and Deploy from VS again. 
+
+
+
   }
 }
