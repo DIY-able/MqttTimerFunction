@@ -7,20 +7,24 @@
     // Note: These configurations won't get deployed to Azure, it's local only
     //       Enter all the values in Configration section
 
-    "MqttBrokerURL": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.hivemq.cloud",
+    "MqttBrokerURL": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "MqttBrokerClientID": "ClientUniqueName00001",
     "MqttBrokerTopic": "topicname/actionname",
     "MqttBrokerUsername": "username",
     "MqttBrokerPassword": "password",
     "Timer1GpioName": "GP16",
-    "Timer1CronON": "0 30 8 * * *", //  starts at 8:30 AM
-    "Timer1CronOFF": "0 30 20 * * *", //  stops at 20:30 PM 
+    "Timer1CronON": "0 30 8 * * *", // sample starts at 8:30 AM   (0 30 8 * * *)
+    "Timer1CronOFF": "0 30 20 * * *", // sample stops at 20:30 PM (0 30 20 * * *)
     "Timer2GpioName": "GP17",
-    "Timer2CronON": "0 0 17 * * *", //  starts: 5 PM
-    "Timer2CronOFF": "0 30 23 * * *", //  stops: 23:30PM 
-    "Http1GpioName": "GP26", // http trigger 1 (not anonymous, authenicated by Function key, use query string code=[key] or x-functions-key:[key] in HTTP Header )
-    "Http2GpioName": "GP27", // http trigger 2 
+    "Timer2CronON": "0 0 17 * * *", // sample starts: 17:00 PM (0 0 17 * * *)
+    "Timer2CronOFF": "0 30 23 * * *", // sample stops: 23:30 PM (0 30 23 * * *)
+    "Http1Json": "{'MFA':123456, 'GP26':1, 'GP27':1}", // sample http trigger 1  turn on 2 relays 
+    "Http2Json": "{'MFA':123456, 'GP16':0}", // sample http trigger 2 turn off a relay 
     "TotpKey": "ORUGS4ZANFZSAYJAONSWG4TFOQQGWZLZ" // This key is Base32 encoded, use online tool to encode/decode.
+
+    // NOTES: Http Trigger Azure Function, Http1Json and Http2Json are authenicated by Function key, 
+    //        use query string code=[key] or x-functions-key:[key] in HTTP Header on the URL
+
 
     // Azure Portal deployment notes:
     // 1. Create Function App (Consumption plan)
