@@ -27,10 +27,10 @@ namespace MqttTimerFunction
 
         private static string timer1GpioName = "";
         private static string timer2GpioName = "";
-        private static string http1GpioName = "";
-        private static string http2GpioName = "";
+        private static string Http1Json = "";
+        private static string Http2Json = "";
         private static string totpKey = "";
-        
+
 
         public MqttTimerFunction(ILoggerFactory loggerFactory)
         {
@@ -49,8 +49,8 @@ namespace MqttTimerFunction
 
                 timer1GpioName = Environment.GetEnvironmentVariable("Timer1GpioName") ?? "";
                 timer2GpioName = Environment.GetEnvironmentVariable("Timer2GpioName") ?? "";
-                http1GpioName = Environment.GetEnvironmentVariable("Http1GpioName") ?? "";
-                http2GpioName = Environment.GetEnvironmentVariable("Http2GpioName") ?? "";
+                Http1Json = Environment.GetEnvironmentVariable("Http1Json") ?? "";
+                Http2Json = Environment.GetEnvironmentVariable("Http2Json") ?? "";
 
                 totpKey = Environment.GetEnvironmentVariable("TotpKey") ?? "";
             }
@@ -75,8 +75,8 @@ namespace MqttTimerFunction
             _logger.LogInformation($"C# Timer1Starts trigger function executed at: {DateTime.Now}");
 
             if (myTimer.ScheduleStatus is not null)
-            {                
-                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer1GpioName + "\": 1}"));
+            {
+                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + ", \"" + timer1GpioName + "\": 1}"));
             }
         } // run
 
@@ -87,7 +87,7 @@ namespace MqttTimerFunction
 
             if (myTimer.ScheduleStatus is not null)
             {
-                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer1GpioName + "\": 0}"));
+                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + ", \"" + timer1GpioName + "\": 0}"));
             }
         } // run
 
@@ -99,7 +99,7 @@ namespace MqttTimerFunction
 
             if (myTimer.ScheduleStatus is not null)
             {
-                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer2GpioName + "\": 1}"));
+                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + ", \"" + timer2GpioName + "\": 1}"));
             }
         } // run
 
@@ -110,7 +110,7 @@ namespace MqttTimerFunction
 
             if (myTimer.ScheduleStatus is not null)
             {
-                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + timer2GpioName + "\": 0}"));
+                Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + ", \"" + timer2GpioName + "\": 0}"));
             }
         } // run
 
@@ -119,7 +119,10 @@ namespace MqttTimerFunction
         {
             _logger.LogInformation("C# Http1Send function processed a request.");
 
-            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http1GpioName + "\": 1}")); // ON
+            string finalJson = Http1Json.Replace("123456", GetTotpCode().ToString());
+            finalJson = finalJson.Replace("'", "\"");
+
+            Task.Run(() => Publish_Topic(finalJson));
 
             return new OkObjectResult("Send Mqtt triggered");
         }
@@ -129,7 +132,10 @@ namespace MqttTimerFunction
         {
             _logger.LogInformation("C# Http2Send function processed a request.");
 
-            Task.Run(() => Publish_Topic("{\"MFA\":" + GetTotpCode() + "}", "{\"" + http2GpioName + "\": 0}")); // OFF
+            string finalJson = Http2Json.Replace("123456", GetTotpCode().ToString());
+            finalJson = finalJson.Replace("'", "\"");
+
+            Task.Run(() => Publish_Topic(finalJson));
 
             return new OkObjectResult("Send Mqtt triggered");
         }
@@ -192,7 +198,7 @@ namespace MqttTimerFunction
         /// <param name="mfa"></param>
         /// <param name="payload"></param>
         /// <returns></returns>
-        public static async Task Publish_Topic(string mfa, string payload)
+        public static async Task Publish_Topic(string payload)
         {
             var mqttEventLogger = new MqttNetEventLogger("MyCustomLogger");
 
@@ -235,15 +241,7 @@ namespace MqttTimerFunction
                 var response = await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
                 Console.WriteLine(response.ToString());
 
-                // MFA message 
-                var mfaMessage = new MqttApplicationMessageBuilder()
-                    .WithTopic(topic)
-                    .WithPayload(mfa)
-                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
-                    .WithRetainFlag(false)
-                    .Build();
-
-                // GPXX message
+                // message
                 var applicationMessage = new MqttApplicationMessageBuilder()
                     .WithTopic(topic)
                     .WithPayload(payload)
@@ -251,9 +249,7 @@ namespace MqttTimerFunction
                     .WithRetainFlag(false)
                     .Build();
 
-                // Publish both messages with 5 seconds apart
-                await mqttClient.PublishAsync(mfaMessage, CancellationToken.None);
-                await Task.Delay(5000);
+                // Publish message
                 await mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
 
                 await mqttClient.DisconnectAsync();
@@ -273,7 +269,7 @@ namespace MqttTimerFunction
                 Console.WriteLine($"OUT: {Convert.ToBase64String(eventArgs.Buffer)}");
             }
 
-           return Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
 
